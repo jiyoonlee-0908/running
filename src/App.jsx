@@ -155,7 +155,7 @@ export default function App() {
         </>
       ) : (
         <>
-          Your records are saved when you log in.&nbsp;
+          Optimized for PC. Your records are saved when you log in.&nbsp;
           <strong style={{ color: '#111827' }}>Pro Juhyeok Park (OK Cycling)</strong> made this.
         </>
       )}

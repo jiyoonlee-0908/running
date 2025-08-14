@@ -1,199 +1,212 @@
+// src/components/Dashboard.jsx
 import React, { useMemo, useState } from 'react'
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip,
-  CartesianGrid, ResponsiveContainer, Legend
+  ResponsiveContainer,
+  LineChart, Line,
+  XAxis, YAxis,
+  CartesianGrid,
+  Tooltip, Legend,
 } from 'recharts'
 import { secondsToPace } from '../lib/utils.js'
 
-/* 라벨 */
-const LABEL = {
+/* ===== 라벨/텍스트 ===== */
+const TXT = {
   ko: {
     distance: '거리',
-    pace: '평균·최고 페이스',
-    hr: '평균·최대 심박수',
-    power: '평균·최대 파워',
-    cad: '평균·최대 케이던스',
-    tabsTitle: '보행길이·접지시간·수직비율·수직진폭',
-    avg: '평균',
-    max: '최대',
+    pacePair: '평균·최고 페이스',
+    hrPair: '평균·최대 심박수',
+    powerPair: '평균·최대 파워',
+    cadPair: '평균·최대 케이던스',
+    formAvg: '평균',
+    formMax: '최대',
+
     stride: '보행길이',
     gct: '접지시간',
     vRatio: '수직비율',
-    vOsc: '수직진폭'
+    vOsc: '수직진폭',
   },
   en: {
     distance: 'Distance',
-    pace: 'Avg·Max Pace',
-    hr: 'Avg·Max Heart Rate',
-    power: 'Avg·Max Power',
-    cad: 'Avg·Max Cadence',
-    tabsTitle: 'Stride·GCT·Vertical Ratio·Vertical Oscillation',
-    avg: 'Avg',
-    max: 'Max',
+    pacePair: 'Avg · Max Pace',
+    hrPair: 'Avg · Max Heart Rate',
+    powerPair: 'Avg · Max Power',
+    cadPair: 'Avg · Max Cadence',
+    formAvg: 'Avg',
+    formMax: 'Max',
+
     stride: 'Stride',
     gct: 'Ground Contact',
     vRatio: 'Vertical Ratio',
-    vOsc: 'Vertical Osc.'
+    vOsc: 'Vertical Osc.',
   }
 }
 
-/* 유틸 포맷터 */
-const paceTick = (v)=> secondsToPace(Number(v) || 0)
-const numTick  = (v)=> (v ?? '') // 단순 숫자
-const byTypeTick = (type)=>(type==='pace' ? paceTick : numTick)
-
-/* 공용 툴팁 포맷터 */
-const tooltipFormatter = (metricType, lang)=>(value, name) => {
-  const vv = metricType==='pace' ? secondsToPace(value) : value
-  const label = (name==='avg')
-    ? (lang==='ko' ? LABEL.ko.avg : LABEL.en.avg)
-    : (lang==='ko' ? LABEL.ko.max : LABEL.en.max)
-  return [vv, label]
+/* ===== 단위 ===== */
+const UNITS = {
+  distance: ' km',
+  avgPace: '', maxPace: '',               // pace는 mm:ss로 포맷
+  avgHR: ' bpm',  maxHR: ' bpm',
+  avgPower: ' W', maxPower: ' W',
+  avgCad: ' rpm', maxCad: ' rpm',
+  stride: ' cm', gct: ' ms',
+  vRatio: ' %',  vOsc: ' cm',
 }
 
-/* 2-선(평균/최대) 공용 차트 */
-function DualLineCard({ title, data, metricType='number', lang='ko' }) {
-  const yTickFormatter = byTypeTick(metricType)
-
-  return (
-    <div className="chart-card one">
-      <div className="chart-title">{title}</div>
-      <div className="chart" style={{ paddingTop: 6 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 14, right: 16, bottom: 10, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} tickFormatter={yTickFormatter} />
-            <Tooltip
-              formatter={tooltipFormatter(metricType, lang)}
-              labelFormatter={(l)=> l}
-            />
-            {/* 범례: 작게, 그래프 위에 살짝 */}
-            <Legend
-              verticalAlign="top"
-              align="right"
-              iconType="circle"
-              wrapperStyle={{ top: 4, right: 6, fontSize: 12, lineHeight: '12px' }}
-              formatter={(v)=> v==='avg'
-                ? (lang==='ko'?LABEL.ko.avg:LABEL.en.avg)
-                : (lang==='ko'?LABEL.ko.max:LABEL.en.max)
-              }
-            />
-            <Line type="monotone" dataKey="avg" stroke="#1d4ed8" dot strokeWidth={2}/>
-            <Line type="monotone" dataKey="max" stroke="#ef4444" dot strokeWidth={2}/>
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  )
+/* ===== 색상 ===== */
+const COLORS = {
+  avg: '#1d4ed8',  // 파랑
+  max: '#ef4444',  // 빨강
+  mono: '#111827', // 단일(탭/거리)
 }
 
-/* 단일 라인 카드(거리 등) */
-function SingleLineCard({ title, data, color='#111827', yTick=numTick }) {
-  return (
-    <div className="chart-card one">
-      <div className="chart-title">{title}</div>
-      <div className="chart" style={{ paddingTop: 6 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 16, bottom: 10, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} tickFormatter={yTick} />
-            <Tooltip labelFormatter={(l)=> l}/>
-            <Line type="monotone" dataKey="val" stroke={color} dot strokeWidth={2}/>
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  )
+/* ===== 유틸 ===== */
+const getDistance = (e) => e.dist ?? e.distance ?? e.distKm ?? e.km ?? null
+const paceTick = (v) => secondsToPace(v || 0)
+const numTick  = (v) => v
+
+// 0이면 라벨만 숨기는 포맷터
+const fmtNoZero = (fmt, unit = '') => (v) => {
+  if (v === 0) return ''              // 0 라벨 숨김
+  const base = fmt ? fmt(v) : v
+  return `${base}${unit}`
 }
 
-export default function Dashboard({ entries = [], lang='ko' }) {
-  const L = LABEL[lang]
+/* ===== 메인 컴포넌트 ===== */
+export default function Dashboard({ entries = [], lang = 'ko' }) {
+  const L = TXT[lang]
 
-  // 날짜 순 정렬
-  const sorted = useMemo(() => {
-    const copy = (entries || []).slice()
-    copy.sort((a,b)=> new Date(a.date) - new Date(b.date))
-    return copy
+  // 데이터 가공
+  const data = useMemo(() => {
+    const arr = entries || []
+
+    const dist = arr.map(e => ({ date: e.date, val: getDistance(e) }))
+
+    const pair = (kAvg, kMax) =>
+      arr.map(e => ({
+        date: e.date,
+        avg: e[kAvg] ?? null,
+        max: e[kMax] ?? null,
+      }))
+
+    const stride = arr.map(e => ({ date: e.date, val: e.stride ?? null }))
+    const gct    = arr.map(e => ({ date: e.date, val: e.gct ?? null }))
+    const vRatio = arr.map(e => ({ date: e.date, val: e.vRatio ?? null }))
+    const vOsc   = arr.map(e => ({ date: e.date, val: e.vOsc ?? null }))
+
+    return {
+      dist,
+      pace:  pair('avgPace',  'maxPace'),
+      hr:    pair('avgHR',    'maxHR'),
+      power: pair('avgPower', 'maxPower'),
+      cad:   pair('avgCad',   'maxCad'),
+      tabs:  { stride, gct, vRatio, vOsc }
+    }
   }, [entries])
 
-  // 데이터 변환
-  const mkDual = (avgKey, maxKey) =>
-    sorted.map(e=>({ date: e.date, avg: e?.[avgKey] ?? null, max: e?.[maxKey] ?? null }))
+  // 탭 상태
+  const [activeTab, setActiveTab] = useState('stride')
 
-  const mkSingle = (key) =>
-    sorted.map(e=>({ date: e.date, val: e?.[key] ?? null }))
+  // 탭 메타
+  const TAB_META = useMemo(() => ({
+    stride: { label: L.stride, color: COLORS.mono, unit: UNITS.stride, yTick: numTick,  data: data.tabs.stride },
+    gct:    { label: L.gct,    color: COLORS.mono, unit: UNITS.gct,    yTick: numTick,  data: data.tabs.gct },
+    vRatio: { label: L.vRatio, color: COLORS.mono, unit: UNITS.vRatio, yTick: numTick,  data: data.tabs.vRatio },
+    vOsc:   { label: L.vOsc,   color: COLORS.mono, unit: UNITS.vOsc,   yTick: numTick,  data: data.tabs.vOsc },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [data, lang])
 
-  // 시리즈
-  const paceData  = mkDual('avgPace', 'maxPace')     // pace(초) → mm:ss
-  const hrData    = mkDual('avgHR', 'maxHR')
-  const powData   = mkDual('avgPower', 'maxPower')
-  const cadData   = mkDual('avgCad', 'maxCad')
+  /* ===== 공통 렌더러 ===== */
+  const PairChart = ({ id, title, rows, yTick, unitAvgKey, unitMaxKey }) => {
+    const isPace = unitAvgKey === 'avgPace' || unitMaxKey === 'maxPace'
+    const axisTick = isPace
+      ? (v) => (v === 0 ? '' : paceTick(v))                  // 0:00 숨김
+      : fmtNoZero(null, UNITS[unitAvgKey] || '')             // 숫자 + 단위, 0 숨김
 
-  const strideData = mkSingle('stride')
-  const gctData    = mkSingle('gct')
-  const vRatioData = mkSingle('vRatio')
-  const vOscData   = mkSingle('vOsc')
-
-  const distanceData = mkSingle('distance')
-  const hasDistance = distanceData.some(d => d.val != null)
-
-  // 탭
-  const [active, setActive] = useState('stride')
-  const TAB_LABEL = {
-    stride: L.stride,
-    gct: L.gct,
-    vRatio: L.vRatio,
-    vOsc: L.vOsc
+    return (
+      <div id={id} className="chart-card one">
+        <h4 className="chart-title" style={{ fontSize: 20, fontWeight: 800, margin: '6px 8px 4px' }}>{title}</h4>
+        <div className="chart">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={rows} margin={{ top: 16, right: 16, bottom: 10, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={axisTick} />
+              <Tooltip
+                separator="" // 콜론 제거
+                labelFormatter={(l) => l}
+                formatter={(v, key) => {
+                  // key => 'avg' | 'max'
+                  const metricKey = key === 'avg' ? unitAvgKey : unitMaxKey
+                  const val = (metricKey === 'avgPace' || metricKey === 'maxPace')
+                    ? secondsToPace(v)
+                    : v
+                  const unit = UNITS[metricKey] || ''
+                  const label = key === 'avg' ? L.formAvg : L.formMax
+                  return [`${val}${unit}`, label]
+                }}
+              />
+              <Legend
+                verticalAlign="top"
+                align="right"
+                iconType="circle"
+                wrapperStyle={{ top: -8, right: 4, fontSize: 12 }} // 살짝 위, 작게
+                formatter={(v) => v === 'avg' ? L.formAvg : L.formMax}
+              />
+              <Line type="monotone" name="avg" dataKey="avg" stroke={COLORS.avg} dot strokeWidth={2}/>
+              <Line type="monotone" name="max" dataKey="max" stroke={COLORS.max} dot strokeWidth={2}/>
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    )
   }
 
-    // EN만 살짝 더 작고 압축된 타이포 적용 (KO는 기존과 동일)
-  const tabFontSize = lang === 'en' ? 18 : 20
-  const tabLineHeight = lang === 'en' ? 1.1 : 1.2
-  const tabGap = lang === 'en' ? 22 : 24
-  
-  const tabData = {
-    stride: { data: strideData, yTick: numTick, color:'#111827' },
-    gct:    { data: gctData,    yTick: numTick, color:'#111827' },
-    vRatio: { data: vRatioData, yTick: numTick, color:'#111827' },
-    vOsc:   { data: vOscData,   yTick: numTick, color:'#111827' }
-  }
+  const DistanceChart = () => (
+    <div id="chart-distance" className="chart-card one">
+      <h4 className="chart-title" style={{ fontSize: 20, fontWeight: 800, margin: '6px 8px 4px' }}>{L.distance}</h4>
+      <div className="chart">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data.dist} margin={{ top: 16, right: 16, bottom: 10, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+            <YAxis
+              tick={{ fontSize: 12 }}
+              tickFormatter={fmtNoZero(null, UNITS.distance)} // "0 km" 숨김
+            />
+            <Tooltip
+              separator=""
+              labelFormatter={(l)=> l}
+              formatter={(v)=> [`${v}${UNITS.distance}`, '']}
+            />
+            <Line type="monotone" dataKey="val" stroke={COLORS.mono} dot strokeWidth={2}/>
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
 
-  return (
-    <div className="charts-stack">
-
-      {/* 거리(데이터가 있는 경우에만 표시) */}
-      {hasDistance && (
-        <SingleLineCard title={L.distance} data={distanceData} color="#0f766e" yTick={numTick} />
-      )}
-
-      {/* 평균/최대 4종 */}
-      <DualLineCard title={L.pace}  data={paceData}  metricType="pace"  lang={lang}/>
-      <DualLineCard title={L.hr}    data={hrData}    metricType="number"  lang={lang}/>
-      <DualLineCard title={L.power} data={powData}   metricType="number"  lang={lang}/>
-      <DualLineCard title={L.cad}   data={cadData}   metricType="number"  lang={lang}/>
-
-      {/* 탭: 보행길이/접지시간/수직비율/수직진폭 */}
-      <div className="chart-card one">
-        {/* 탭 헤더(제목처럼 보이게, 밑 가로줄은 없음 / 활성 탭만 밑줄) */}
+  const TabsChart = () => {
+    const meta = TAB_META[activeTab]
+    return (
+      <div id="chart-tabs" className="chart-card one">
+        {/* 탭 헤더 (활성 탭만 밑줄, 글자 크기 20) */}
         <div style={{ display:'flex', gap:24, alignItems:'flex-end', margin:'0 8px 8px' }}>
-          {Object.keys(TAB_LABEL).map(k => (
+          {Object.keys(TAB_META).map(k => (
             <button
               key={k}
-              onClick={()=>setActive(k)}
+              onClick={() => setActiveTab(k)}
               style={{
                 border:'none',
                 background:'transparent',
                 padding:'2px 0 6px',
                 cursor:'pointer',
-                fontSize:18,
-                fontWeight: active===k? 800 : 700,
-                color: active===k? '#111827' : '#6b7280',
-                borderBottom: active===k ? '3px solid #111827' : '3px solid transparent'
+                fontSize: 20,
+                fontWeight: activeTab === k ? 800 : 700,
+                color: activeTab === k ? '#111827' : '#6b7280',
+                borderBottom: activeTab === k ? '3px solid #111827' : '3px solid transparent'
               }}
             >
-              {TAB_LABEL[k]}
+              {TAB_META[k].label}
             </button>
           ))}
         </div>
@@ -201,15 +214,71 @@ export default function Dashboard({ entries = [], lang='ko' }) {
         {/* 선택된 탭 차트 */}
         <div className="chart" style={{ paddingTop: 4 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={tabData[active].data} margin={{ top: 8, right: 16, bottom: 10, left: 0 }}>
+            <LineChart data={meta.data} margin={{ top: 8, right: 16, bottom: 10, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={tabData[active].yTick} />
-              <Tooltip labelFormatter={(l)=> l} formatter={(v) => [tabData[active].yTick ? tabData[active].yTick(v) : v, '']}/>
-              <Line type="monotone" dataKey="val" name="" stroke={tabData[active].color} dot strokeWidth={2}/>
+              <YAxis
+                tick={{ fontSize: 12 }}
+                tickFormatter={fmtNoZero(meta.yTick, meta.unit)} // 0 숨김 + 단위
+              />
+              <Tooltip
+                separator=""                 // ":" 제거
+                labelFormatter={(l)=> l}
+                formatter={(v)=> [
+                  `${meta.yTick ? meta.yTick(v) : v}${meta.unit || ''}`,
+                  ''
+                ]}
+              />
+              <Line type="monotone" dataKey="val" stroke={meta.color} dot strokeWidth={2}/>
             </LineChart>
           </ResponsiveContainer>
         </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="charts-stack">
+        <DistanceChart />
+
+        <PairChart
+          id="chart-pace"
+          title={L.pacePair}
+          rows={data.pace}
+          yTick={paceTick}
+          unitAvgKey="avgPace"
+          unitMaxKey="maxPace"
+        />
+
+        <PairChart
+          id="chart-hr"
+          title={L.hrPair}
+          rows={data.hr}
+          yTick={numTick}
+          unitAvgKey="avgHR"
+          unitMaxKey="maxHR"
+        />
+
+        <PairChart
+          id="chart-power"
+          title={L.powerPair}
+          rows={data.power}
+          yTick={numTick}
+          unitAvgKey="avgPower"
+          unitMaxKey="maxPower"
+        />
+
+        <PairChart
+          id="chart-cad"
+          title={L.cadPair}
+          rows={data.cad}
+          yTick={numTick}
+          unitAvgKey="avgCad"
+          unitMaxKey="maxCad"
+        />
+
+        <TabsChart />
       </div>
     </div>
   )

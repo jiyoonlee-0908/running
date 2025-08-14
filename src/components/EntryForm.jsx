@@ -29,7 +29,6 @@ const LABELS = {
     vOsc: '수직진폭 (cm)',
     addRowSave: '행 추가(저장)',
     del: '삭제',
-    pacePh: '예: 5:20',
     noRows: '아직 추가된 기록이 없습니다.'
   },
   en: {
@@ -49,7 +48,6 @@ const LABELS = {
     vOsc: 'Vertical Oscillation (cm)',
     addRowSave: 'Add row (save)',
     del: 'Delete',
-    pacePh: 'e.g. 5:20',
     noRows: 'No entries yet.'
   }
 }
@@ -110,7 +108,7 @@ export default function EntryForm({ entries, setEntries, lang='ko' }) {
         </div>
         <div>
           <label className="help">{L.dist}</label>
-          <input className="input" type="number" step="any" placeholder="예: 5.0"
+          <input className="input" type="number" step="any"
                  value={row.dist}
                  onChange={e=>setRow({...row, dist: e.target.value})}/>
         </div>
