@@ -3,15 +3,15 @@ import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
 
-/** ✅ 당신 프로젝트(Web App) 설정 */
+// ✅ Firebase 콘솔에서 복사한 새 프로젝트 설정 (질문에 제공한 값)
 const firebaseConfig = {
-  apiKey: 'AIzaSyCwJGIMMhtg1LL9d8W07uAAqTklbO2ugQo',
-  authDomain: 'oz-firebase-c42ab.firebaseapp.com',
-  projectId: 'oz-firebase-c42ab',
-  storageBucket: 'oz-firebase-c42ab.firebasestorage.app',
-  messagingSenderId: '195506676346',
-  appId: '1:195506676346:web:74dd6c22928dedb5d591c3',
-  measurementId: 'G-YNCGY042CM'
+  apiKey: "AIzaSyAqIpeLvVI2EGABJTGsBN9BEHOKgxbXstY",
+  authDomain: "running-8932a.firebaseapp.com",
+  projectId: "running-8932a",
+  storageBucket: "running-8932a.firebasestorage.app",
+  messagingSenderId: "1086190126018",
+  appId: "1:1086190126018:web:4b2dfbfeac6919d0ad4c5b",
+  measurementId: "G-JET0K0ZBN3"
 }
 
 const app = initializeApp(firebaseConfig)
@@ -20,7 +20,7 @@ export const auth = getAuth(app)
 export const googleProvider = new GoogleAuthProvider()
 export const db = getFirestore(app)
 
-/** 오프라인 캐시(재방문/재로그인 속도 개선) */
+// (선택) 오프라인 캐시 — 실패해도 무시
 if (typeof window !== 'undefined') {
   enableIndexedDbPersistence(db).catch(() => {})
 }

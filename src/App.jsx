@@ -19,7 +19,7 @@ const STR = {
     langKo: '한국어',
     notice: 'Your records are saved when you log in. Made by Pro Juhyeok Park, OK Cycling.',
     syncing: 'Syncing…',
-    toastGuestSaved: 'Saved locally (this browser).',
+    toastGuestSaved: 'Saved locally.',
     toastAccountSaved: 'Saved to your account!',
     backToTop: 'Top'
   },
@@ -49,24 +49,19 @@ export default function App() {
   const [name, setName] = useState('')
   const [entries, setEntries] = useState([])
 
-  // 상단 작은 인디케이터(전체 블로킹 X)
-  const [syncing, setSyncing] = useState(false)
-  // 저장 성공 토스트
-  const [toast, setToast] = useState(null)
-  // 맨 위로 버튼 표시 여부
-  const [showTop, setShowTop] = useState(false)
+  const [syncing, setSyncing] = useState(false) // 상단 미니 인디케이터
+  const [toast, setToast] = useState(null)      // 저장 토스트
+  const [showTop, setShowTop] = useState(false) // 맨위 버튼
 
-  // 토스트 헬퍼
   const showToast = (msg) => {
     setToast(msg)
-    window.clearTimeout(showToast._t)
-    showToast._t = window.setTimeout(() => setToast(null), 2200)
+    clearTimeout(showToast._t)
+    showToast._t = setTimeout(() => setToast(null), 2200)
   }
 
-  // 언어 저장
   useEffect(() => { localStorage.setItem('rg_lang', lang) }, [lang])
 
-  // 초기엔 게스트 데이터 먼저 그려서 첫 페인트 빠르게
+  // 초기 게스트 데이터
   useEffect(() => {
     (async () => {
       const data = await loadEntries(null)
@@ -75,36 +70,28 @@ export default function App() {
     })()
   }, [])
 
-  // 인증 상태 구독 (언어 전환과 무관하게 한 번만)
+  // 인증 상태
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u || null)
       if (u) {
         setSyncing(true)
         try {
-          // 서버 데이터 로드 + 게스트 병합(에러 무시) 병렬
           const [serverData, mergeRes] = await Promise.all([
             loadEntries(u.uid),
             mergeGuestToUser(u.uid).catch(() => ({ mergedCount: 0 }))
           ])
-
           const fallback = u.displayName || (u.email ? u.email.split('@')[0] : '')
           setName((serverData.name && serverData.name.trim()) ? serverData.name : fallback)
           setEntries(serverData.entries || [])
-
-          // 병합이 있었다면 새 데이터로 갱신
           if (mergeRes?.mergedCount > 0) {
             const after = await loadEntries(u.uid)
             setEntries(after.entries || [])
-            showToast(lang==='en' ? `Merged ${mergeRes.mergedCount} items.` : `${mergeRes.mergedCount}건 병합됨`)
           }
-        } catch (e) {
-          console.error(e)
         } finally {
           setSyncing(false)
         }
       } else {
-        // 게스트 모드
         const data = await loadEntries(null)
         setName(data.name || '')
         setEntries(data.entries || [])
@@ -112,38 +99,31 @@ export default function App() {
       }
     })
     return () => unsub()
-  }, []) // 의도적으로 deps 없음
+  }, [])
 
-  // "맨 위로" 버튼 표시 제어
+  // 맨위 버튼 표시
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 400)
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-
   const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 
-  // 동기화 무한 표시 방지용 안전 타임아웃(15초)
+  // 동기화 안전 타임아웃
   useEffect(() => {
     if (!syncing) return
     const t = setTimeout(() => setSyncing(false), 15000)
     return () => clearTimeout(t)
   }, [syncing])
 
-  // Google 인증: 가입/로그인 통합 (계정 없으면 자동 생성)
-  const doAuth = async () => {
-    try { await signInWithPopup(auth, googleProvider) } catch (e) { alert(e?.message || e) }
-  }
+  // Google: 가입/로그인 통합
+  const doAuth = async () => { await signInWithPopup(auth, googleProvider) }
   const doLogout = async () => { await signOut(auth) }
 
   const handleSave = async () => {
     const uid = user?.uid || null
-    try {
-      await saveEntries(uid, { name: name || '', entries })
-      showToast(uid ? T.toastAccountSaved : T.toastGuestSaved)
-    } catch (e) {
-      alert(e?.message || e)
-    }
+    await saveEntries(uid, { name: name || '', entries })
+    showToast(uid ? T.toastAccountSaved : T.toastGuestSaved)
   }
 
   return (
@@ -172,7 +152,6 @@ export default function App() {
             >{T.langKo}</button>
 
             {!user ? (
-              // ✅ 단일 버튼: 가입/로그인 통합
               <button className="button primary" onClick={doAuth}>
                 {T.login}
               </button>
@@ -191,7 +170,7 @@ export default function App() {
         <div className="notice">{T.notice}</div>
       </div>
 
-      {/* 본문: 항상 1:1 레이아웃 */}
+      {/* 본문: 1:1 레이아웃 */}
       <div className="container" style={{ paddingTop: 8 }}>
         <div className="two-pane">
           {/* LEFT */}
