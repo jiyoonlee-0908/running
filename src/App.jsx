@@ -6,6 +6,10 @@ import { loadEntries, saveEntries, mergeGuestToUser } from './lib/storage.js'
 import { auth, googleProvider } from './lib/firebase.js'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 
+// QR 이미지 (src 폴더에 qr1.png, qr2.png가 있어야 합니다)
+import qr1 from './qr1.png'
+import qr2 from './qr2.png'
+
 const STR = {
   en: {
     formTitle: 'Input · Save',
@@ -17,11 +21,12 @@ const STR = {
     logout: 'Log out',
     langEn: 'English',
     langKo: '한국어',
-    notice: 'Your records are saved when you log in. Made by Pro Juhyeok Park, OK Cycling.',
     syncing: 'Syncing…',
     toastGuestSaved: 'Saved locally.',
     toastAccountSaved: 'Saved to your account!',
-    backToTop: 'Top'
+    linksTitle: 'Links · QR',
+    okcyReserve: 'OK Cycling Reservation',
+    doctorParkYoutube: 'Dr. Park Cycling YouTube',
   },
   ko: {
     formTitle: '기록 입력 · 저장',
@@ -33,11 +38,12 @@ const STR = {
     logout: '로그아웃',
     langEn: 'English',
     langKo: '한국어',
-    notice: '로그인을 하면 기록이 저장됩니다. 오케이사이클링 박주혁프로가 제작했습니다.',
     syncing: '동기화 중…',
     toastGuestSaved: '이 브라우저에 저장되었습니다.',
     toastAccountSaved: '계정에 저장되었습니다!',
-    backToTop: '맨위'
+    linksTitle: '링크 · QR',
+    okcyReserve: '오케이사이클링 예약하기',
+    doctorParkYoutube: '사이클박박사 유튜브',
   }
 }
 
@@ -49,9 +55,9 @@ export default function App() {
   const [name, setName] = useState('')
   const [entries, setEntries] = useState([])
 
-  const [syncing, setSyncing] = useState(false) // 상단 미니 인디케이터
-  const [toast, setToast] = useState(null)      // 저장 토스트
-  const [showTop, setShowTop] = useState(false) // 맨위 버튼
+  const [syncing, setSyncing] = useState(false)
+  const [toast, setToast] = useState(null)
+  const [showTop, setShowTop] = useState(false)
 
   const showToast = (msg) => {
     setToast(msg)
@@ -63,7 +69,7 @@ export default function App() {
 
   // 초기 게스트 데이터
   useEffect(() => {
-    (async () => {
+    ;(async () => {
       const data = await loadEntries(null)
       setName(data.name || '')
       setEntries(data.entries || [])
@@ -126,6 +132,111 @@ export default function App() {
     showToast(uid ? T.toastAccountSaved : T.toastGuestSaved)
   }
 
+  // 상단 안내문 (14px, 오른쪽 정렬, '오케이사이클링 박주혁프로'만 진하게)
+  const Notice = () => (
+    <div
+      className="notice"
+      style={{ textAlign: 'right', fontSize: '14px', color: '#64748b' }}
+    >
+      {lang === 'ko' ? (
+        <>
+          로그인하면 기록이 저장됩니다.&nbsp;
+          <strong style={{ color: '#111827' }}>오케이사이클링 박주혁프로</strong>
+          가 제작했습니다.
+        </>
+      ) : (
+        <>
+          Your records are saved when you log in.&nbsp;
+          <strong style={{ color: '#111827' }}>Pro Juhyeok Park (OK Cycling)</strong>
+          &nbsp;made this.
+        </>
+      )}
+    </div>
+  )
+
+  // QR 두 개(한 줄), 밑줄 제거/검은색, 동일 크기/잘림 방지
+  const QRRow = () => {
+  const row = {
+    display: 'flex',
+    gap: 16,
+    marginTop: 4,
+    marginBottom: 4,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    flexWrap: 'nowrap', // 한 줄 고정
+  };
+  const col = {
+    flex: '0 0 calc(50% - 8px)',
+    textAlign: 'center',
+  };
+  const aStyle = {
+    display: 'block',
+    textDecoration: 'none', // 밑줄 제거
+    color: '#111827',       // 검정 텍스트
+  };
+
+  // ✅ 겉 박스(두 QR의 바깥 크기를 동일하게 고정)
+  const box = {
+    width: 'min(380px, 100%)', // 전체 크기 조절은 여기서; 360~420 사이로 조절해도 OK
+    aspectRatio: '1 / 1',
+    margin: '0 auto 8px',
+    position: 'relative',
+    background: 'transparent',
+  };
+
+  // 내부 래퍼: 이미지 스케일 미세 조정용
+  const inner = (scale = 1) => ({
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: `scale(${scale})`,
+    transformOrigin: 'center',
+    padding: 0, // 필요시 8~12px 패딩 추가 가능
+  });
+
+  const imgStyle = {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain', // 잘림 방지
+    borderRadius: 8,
+    display: 'block',
+  };
+
+  const caption = { fontSize: 14, fontWeight: 600 };
+
+  // 여기 숫자만 살짝 바꿔서 눈으로 맞추면 됩니다
+  const SCALE_QR1 = 1.03;  // QR1 조금 크게
+  const SCALE_QR2 = 0.96;  // QR2 조금 작게
+
+  return (
+    <div style={row}>
+      <div style={col}>
+        <a href="https://m.site.naver.com/1O9lV" target="_blank" rel="noopener noreferrer" style={aStyle}>
+          <div style={box}>
+            <div style={inner(SCALE_QR1)}>
+              <img src={qr1} alt="OK Cycling QR" style={imgStyle} />
+            </div>
+          </div>
+          <div style={caption}>오케이사이클링 예약하기</div>
+        </a>
+      </div>
+
+      <div style={col}>
+        <a href="https://www.youtube.com/@cyclinglab" target="_blank" rel="noopener noreferrer" style={aStyle}>
+          <div style={box}>
+            <div style={inner(SCALE_QR2)}>
+              <img src={qr2} alt="사이클박박사 유튜브 QR" style={imgStyle} />
+            </div>
+          </div>
+          <div style={caption}>사이클박박사 유튜브</div>
+        </a>
+      </div>
+    </div>
+  );
+};
+
   return (
     <>
       {/* NAV */}
@@ -158,7 +269,7 @@ export default function App() {
             ) : (
               <>
                 <span className="help">{user.email}</span>
-                <button className="button" onClick={doLogout}>{T.logout}</button>
+                <button className="button" onClick={doLogout}>{STR[lang].logout}</button>
               </>
             )}
           </div>
@@ -167,27 +278,36 @@ export default function App() {
 
       {/* 안내 문구 */}
       <div className="container">
-        <div className="notice">{T.notice}</div>
+        <Notice />
       </div>
 
-      {/* 본문: 1:1 레이아웃 */}
+      {/* 본문 */}
       <div className="container" style={{ paddingTop: 8 }}>
         <div className="two-pane">
           {/* LEFT */}
-          <div className="card">
-            <h3 className="section-title">{T.formTitle}</h3>
-            <EntryForm
-              name={name}
-              setName={setName}
-              entries={entries}
-              setEntries={setEntries}
-              lang={lang}
-            />
-            <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:12 }}>
-              <button className="button" onClick={()=>setEntries([])}>{T.reset}</button>
-              <button className="button primary" onClick={handleSave}>
-                {user ? T.saveAccount : T.saveGuest}
-              </button>
+          <div>
+            {/* 기록 입력 · 저장 카드 */}
+            <div className="card">
+              <h3 className="section-title">{T.formTitle}</h3>
+              <EntryForm
+                name={name}
+                setName={setName}
+                entries={entries}
+                setEntries={setEntries}
+                lang={lang}
+              />
+              <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:12 }}>
+                <button className="button" onClick={()=>setEntries([])}>{STR[lang].reset}</button>
+                <button className="button primary" onClick={handleSave}>
+                  {user ? STR[lang].saveAccount : STR[lang].saveGuest}
+                </button>
+              </div>
+            </div>
+
+            {/* ➜ 새 카드: 기록입력저장 카드 “아래”에 별도 카드로 QR 표시 */}
+            <div className="card" style={{ marginTop: 16 }}>
+              <h3 className="section-title">{T.linksTitle}</h3>
+              <QRRow />
             </div>
           </div>
 
@@ -205,7 +325,7 @@ export default function App() {
         onClick={scrollTop}
         aria-label={lang==='en' ? 'Back to top' : '맨 위로'}
       >
-        ↑ {T.backToTop}
+        ↑ Top
       </button>
 
       {/* 저장 토스트 */}
