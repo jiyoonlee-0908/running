@@ -12,7 +12,7 @@
   --c-stride:#a855f7; --c-gct:#64748b; --c-vRatio:#f59e0b; --c-vOsc:#f97316;
 }
 
-*{box-sizing:border-box}
+*{ box-sizing:border-box }
 body{
   margin:0;
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif;
@@ -33,108 +33,119 @@ body{
 .button.ghost{background:#fff;color:var(--primary);border-color:var(--primary)}
 
 .container{max-width:1140px;margin:0 auto;padding:16px}
-.notice{color:var(--muted);font-size:13px;margin:8px 16px 0 16px}
+
+/* 공지(로그인 문구) */
+.notice{color:var(--muted);font-size:13px;margin:8px 16px 0 16px;text-align:right}
 
 /* CARDS / LAYOUT */
 .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 1px 0 rgba(15,23,42,0.02)}
-.section-title{margin:0 0 12px 0;font-size:18px;font-weight:800;color:var(--fg)}
+/* 섹션 타이틀 살짝 키움 */
+.section-title{margin:0 0 12px 0;font-size:20px;font-weight:800;color:var(--fg)}
 
-/* 정확한 1:1 두 칼럼 (언어 무관) */
 .two-pane{display:grid;gap:16px;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
 @media (max-width: 979px){ .two-pane{grid-template-columns:1fr} }
 
+/* 작은 텍스트(기본) */
 .help{color:var(--muted);font-size:12px}
+/* 폼 안의 라벨은 조금 더 키움 */
+.card label.help{font-size:14.5px}
 
 /* FORM */
-.input,.select{border:1px solid var(--border);background:#fff;color:var(--fg);border-radius:12px;padding:12px 14px;font-size:15px;width:100%}
+.input,.select{
+  border:1px solid var(--border);background:#fff;color:var(--fg);
+  border-radius:12px;padding:12px 14px;font-size:16px;width:100%;
+}
 .form-grid{display:grid;gap:12px}
 .form-grid.two{grid-template-columns:repeat(2,minmax(240px,1fr))}
 @media (max-width:700px){ .form-grid.two{grid-template-columns:1fr} }
 .form-grid.auto{grid-template-columns:repeat(2,minmax(240px,1fr))}
 @media (max-width:700px){ .form-grid.auto{grid-template-columns:1fr} }
 
-/* TABLE (헤더 더 작게 + 줄바꿈 허용 + 오른쪽 잘림 방지) */
+/* TABLE */
 .table-wrap{width:100%; overflow-x:auto}
-.table{width:100%; border-collapse:collapse; min-width:960px} /* 화면이 좁으면 가로 스크롤 */
+.table{width:100%; border-collapse:collapse; min-width:960px}
 .table th, .table td{
   border-bottom:1px solid var(--border);
-  padding:8px;                 /* 조금 더 촘촘하게 */
-  font-size:12px;              /* 더 작게 */
+  padding:8px;
+  font-size:12px;
   text-align:left;
   vertical-align:top;
 }
 .table th{
-  font-size:13px;              /* 헤더는 더 작게 */
+  font-size:13px;
   line-height:1.15;
-  white-space:normal;          /* 줄바꿈 허용 */
+  white-space:normal;
   word-break:keep-all;
 }
 .table td.num{ text-align:right }
 
-/* METRIC NAV — 1줄 4개 그리드(모바일은 2개) */
+/* METRIC NAV */
 .metric-nav{
-  display: grid;
-  gap: 10px 12px;
-  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 모바일 2개 */
-  margin: 8px 0 12px;
+  display:grid;
+  gap:10px 12px;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  margin:8px 0 12px;
 }
-@media (min-width: 900px){
-  .metric-nav{ grid-template-columns: repeat(4, minmax(0, 1fr)); } /* 데스크탑 4개 */
+@media (min-width:900px){
+  .metric-nav{ grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
-
 .metric-btn{
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: flex-start;           /* 왼쪽 정렬 */
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--fg);
-  padding: 10px 12px;                    /* 살짝 여유 */
-  border-radius: 999px;
-  font-size: 13px;
-  cursor: pointer;
+  width:100%;
+  display:inline-flex; align-items:center; gap:8px; justify-content:flex-start;
+  border:1px solid var(--border); background:#fff; color:var(--fg);
+  padding:10px 12px; border-radius:999px; font-size:13px; cursor:pointer;
 }
+.metric-btn .dot{ width:10px; height:10px; border-radius:50% }
 
-.metric-btn .dot{
-  width: 10px; height: 10px; border-radius: 50%;
-}
-
-
-/* CHART CARD */
+/* CHARTS */
 .chart-card-title{font-weight:800;margin:0 0 8px 0;color:var(--fg)}
+/* 개별 차트 제목도 살짝 키움(탭 라벨과 통일감) */
+.chart-title{ font-size:20px; font-weight:800; margin:6px 8px 4px; }
 .chart{height:300px}
 
 /* Toast */
 .toast{
-  position: fixed;
-  left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
-  background: #111;
-  color: #fff;
-  padding: 12px 16px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.2);
-  z-index: 9999;
-  font-size: 14px;
+  position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+  background:#111;color:#fff;padding:12px 16px;border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.2); z-index:9999; font-size:14px;
 }
 
-/* Back-to-top FAB */
+/* FAB */
 .fab-top{
-  position: fixed;
-  right: 22px;
-  bottom: 22px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 999px;
-  padding: 12px 14px;
-  box-shadow: 0 12px 28px rgba(0,0,0,.18);
-  cursor: pointer;
-  display: none;          /* 기본 숨김 */
-  z-index: 9999;
+  position:fixed; right:22px; bottom:22px; background:var(--primary); color:#fff;
+  border:none; border-radius:999px; padding:12px 14px; box-shadow:0 12px 28px rgba(0,0,0,.18);
+  cursor:pointer; display:none; z-index:9999; font-weight:800;
+}
+.fab-top.show{ display:inline-flex; align-items:center; gap:8px }
+
+/* 차트 스택 */
+.charts-stack { display:flex; flex-direction:column; gap:16px; }
+.chart-card.one { border:1px solid #e5e7eb; border-radius:16px; padding:12px; }
+
+/* 테이블 */
+.table-wrap { overflow-x:auto; margin-top:14px; }
+.table { width:100%; border-collapse:collapse; }
+.table th, .table td { border-bottom:1px solid #e5e7eb; padding:8px 10px; white-space:nowrap; }
+
+/* 폼 유틸 */
+.grid-2 { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
+.field label { display:block; color:#475569; margin-bottom:6px; }
+.field input { width:100%; border:1px solid #e5e7eb; border-radius:12px; padding:12px 14px; }
+
+/* === 대제목(카드 타이틀): 기록 입력·저장 / 시각화 대시보드 / 링크 · QR === */
+.section-title{
+  font-size: 22px;        /* 기존보다 한 단계 크게, 세 카드 모두 동일 크기 */
+  font-weight: 900;
+}
+
+/* === 그래프 제목(평균·최고 페이스, 평균·최대 심박수 등) 한 단계 작게 === */
+.chart-title,
+.chart-card-title{
+  font-size: 18px;        /* 기존 18px → 16px 정도로 다운 */
   font-weight: 800;
 }
-.fab-top.show{ display: inline-flex; align-items: center; gap: 8px; }
+
+/* === 하단 탭(보행길이/접지시간/수직비율/수직진폭) 한 단계 작게 === */
+.subtabs .tab{
+  font-size: 18px;        /* 기존보다 한 단계만 줄임 */
+}

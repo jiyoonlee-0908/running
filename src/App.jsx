@@ -6,7 +6,7 @@ import { loadEntries, saveEntries, mergeGuestToUser } from './lib/storage.js'
 import { auth, googleProvider } from './lib/firebase.js'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 
-// QR 이미지 (src 폴더에 qr1.png, qr2.png가 있어야 합니다)
+// QR 이미지 (src 폴더에 qr1.png, qr2.png 필요)
 import qr1 from './qr1.png'
 import qr2 from './qr2.png'
 
@@ -26,7 +26,13 @@ const STR = {
     toastAccountSaved: 'Saved to your account!',
     linksTitle: 'Links · QR',
     okcyReserve: 'OK Cycling Reservation',
-    doctorParkYoutube: 'Dr. Park Cycling YouTube',
+    doctorParkYoutube: 'Pro. Park Cycling YouTube',
+
+    // ⬇️ 저장 안내 문구 다국어
+    saveNoticePrefix: 'After logging in and entering your data, press ',
+    saveNoticeStrong: '“Save to Account”',
+    saveNoticeSuffix: ' at the end.',
+    saveNoticeLine2: 'If you don’t save, your data cannot be loaded next time.'
   },
   ko: {
     formTitle: '기록 입력 · 저장',
@@ -34,7 +40,7 @@ const STR = {
     reset: '초기화',
     saveGuest: '게스트로 저장(현재 브라우저)',
     saveAccount: '계정에 저장',
-    login: 'Google로 로그인',
+    login: 'Google 로그인',
     logout: '로그아웃',
     langEn: 'English',
     langKo: '한국어',
@@ -44,6 +50,12 @@ const STR = {
     linksTitle: '링크 · QR',
     okcyReserve: '오케이사이클링 예약하기',
     doctorParkYoutube: '사이클박박사 유튜브',
+
+    // ⬇️ 저장 안내 문구 다국어
+    saveNoticePrefix: '로그인 후 데이터를 입력하시고, 마지막에 꼭 ',
+    saveNoticeStrong: '‘계정에 저장’',
+    saveNoticeSuffix: '을 눌러주세요.',
+    saveNoticeLine2: '저장하지 않으면 다음에 내용을 불러올 수 없습니다.'
   }
 }
 
@@ -52,6 +64,7 @@ export default function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('rg_lang') || 'ko')
   const T = STR[lang]
 
+  // name은 입력을 받지 않더라도 저장 구조를 유지하기 위해 남겨둡니다.
   const [name, setName] = useState('')
   const [entries, setEntries] = useState([])
 
@@ -67,9 +80,9 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem('rg_lang', lang) }, [lang])
 
-  // 초기 게스트 데이터
+  // 초기 게스트 데이터 로드
   useEffect(() => {
-    ;(async () => {
+    (async () => {
       const data = await loadEntries(null)
       setName(data.name || '')
       setEntries(data.entries || [])
@@ -107,7 +120,7 @@ export default function App() {
     return () => unsub()
   }, [])
 
-  // 맨위 버튼 표시
+  // 맨위 버튼
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 400)
     window.addEventListener('scroll', onScroll)
@@ -122,7 +135,7 @@ export default function App() {
     return () => clearTimeout(t)
   }, [syncing])
 
-  // Google: 가입/로그인 통합
+  // Auth
   const doAuth = async () => { await signInWithPopup(auth, googleProvider) }
   const doLogout = async () => { await signOut(auth) }
 
@@ -132,110 +145,85 @@ export default function App() {
     showToast(uid ? T.toastAccountSaved : T.toastGuestSaved)
   }
 
-  // 상단 안내문 (14px, 오른쪽 정렬, '오케이사이클링 박주혁프로'만 진하게)
+  // 상단 안내문
   const Notice = () => (
-    <div
-      className="notice"
-      style={{ textAlign: 'right', fontSize: '14px', color: '#64748b' }}
-    >
+    <div className="notice" style={{ textAlign: 'right', fontSize: 14, color: '#64748b' }}>
       {lang === 'ko' ? (
         <>
-          로그인하면 기록이 저장됩니다.&nbsp;
-          <strong style={{ color: '#111827' }}>오케이사이클링 박주혁프로</strong>
-          가 제작했습니다.
+          pc버전에 최적화 되어있습니다. 로그인하면 기록이 저장됩니다.&nbsp;
+          <strong style={{ color: '#111827' }}>오케이사이클링 박주혁프로</strong>가 제작했습니다.
         </>
       ) : (
         <>
           Your records are saved when you log in.&nbsp;
-          <strong style={{ color: '#111827' }}>Pro Juhyeok Park (OK Cycling)</strong>
-          &nbsp;made this.
+          <strong style={{ color: '#111827' }}>Pro Juhyeok Park (OK Cycling)</strong> made this.
         </>
       )}
     </div>
   )
 
-  // QR 두 개(한 줄), 밑줄 제거/검은색, 동일 크기/잘림 방지
+  // QR 두 개(한 줄)
   const QRRow = () => {
-  const row = {
-    display: 'flex',
-    gap: 16,
-    marginTop: 4,
-    marginBottom: 4,
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    flexWrap: 'nowrap', // 한 줄 고정
-  };
-  const col = {
-    flex: '0 0 calc(50% - 8px)',
-    textAlign: 'center',
-  };
-  const aStyle = {
-    display: 'block',
-    textDecoration: 'none', // 밑줄 제거
-    color: '#111827',       // 검정 텍스트
-  };
+    const row = {
+      display: 'flex',
+      gap: 16,
+      marginTop: 4,
+      marginBottom: 4,
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      flexWrap: 'nowrap',
+    }
+    const col = { flex: '0 0 calc(50% - 8px)', textAlign: 'center' }
+    const aStyle = { display: 'block', textDecoration: 'none', color: '#111827' }
+    const box = {
+      width: 'min(380px, 100%)',
+      aspectRatio: '1 / 1',
+      margin: '0 auto 8px',
+      position: 'relative',
+      background: 'transparent',
+    }
+    const inner = (scale = 1) => ({
+      position: 'absolute',
+      inset: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transform: `scale(${scale})`,
+      transformOrigin: 'center',
+      padding: 0,
+    })
+    const imgStyle = { width: '100%', height: '100%', objectFit: 'contain', borderRadius: 8, display: 'block' }
+    const caption = { fontSize: 14, fontWeight: 600 }
 
-  // ✅ 겉 박스(두 QR의 바깥 크기를 동일하게 고정)
-  const box = {
-    width: 'min(380px, 100%)', // 전체 크기 조절은 여기서; 360~420 사이로 조절해도 OK
-    aspectRatio: '1 / 1',
-    margin: '0 auto 8px',
-    position: 'relative',
-    background: 'transparent',
-  };
+    const SCALE_QR1 = 1.03
+    const SCALE_QR2 = 0.96
 
-  // 내부 래퍼: 이미지 스케일 미세 조정용
-  const inner = (scale = 1) => ({
-    position: 'absolute',
-    inset: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: `scale(${scale})`,
-    transformOrigin: 'center',
-    padding: 0, // 필요시 8~12px 패딩 추가 가능
-  });
-
-  const imgStyle = {
-    width: '100%',
-    height: '100%',
-    objectFit: 'contain', // 잘림 방지
-    borderRadius: 8,
-    display: 'block',
-  };
-
-  const caption = { fontSize: 14, fontWeight: 600 };
-
-  // 여기 숫자만 살짝 바꿔서 눈으로 맞추면 됩니다
-  const SCALE_QR1 = 1.03;  // QR1 조금 크게
-  const SCALE_QR2 = 0.96;  // QR2 조금 작게
-
-  return (
-    <div style={row}>
-      <div style={col}>
-        <a href="https://m.site.naver.com/1O9lV" target="_blank" rel="noopener noreferrer" style={aStyle}>
-          <div style={box}>
-            <div style={inner(SCALE_QR1)}>
-              <img src={qr1} alt="OK Cycling QR" style={imgStyle} />
+    return (
+      <div style={row}>
+        <div style={col}>
+          <a href="https://m.site.naver.com/1O9lV" target="_blank" rel="noopener noreferrer" style={aStyle}>
+            <div style={box}>
+              <div style={inner(SCALE_QR1)}>
+                <img src={qr1} alt="OK Cycling QR" style={imgStyle} />
+              </div>
             </div>
-          </div>
-          <div style={caption}>오케이사이클링 예약하기</div>
-        </a>
-      </div>
+            <div style={caption}>{T.okcyReserve}</div>
+          </a>
+        </div>
 
-      <div style={col}>
-        <a href="https://www.youtube.com/@cyclinglab" target="_blank" rel="noopener noreferrer" style={aStyle}>
-          <div style={box}>
-            <div style={inner(SCALE_QR2)}>
-              <img src={qr2} alt="사이클박박사 유튜브 QR" style={imgStyle} />
+        <div style={col}>
+          <a href="https://www.youtube.com/@cyclinglab" target="_blank" rel="noopener noreferrer" style={aStyle}>
+            <div style={box}>
+              <div style={inner(SCALE_QR2)}>
+                <img src={qr2} alt="사이클박박사 유튜브 QR" style={imgStyle} />
+              </div>
             </div>
-          </div>
-          <div style={caption}>사이클박박사 유튜브</div>
-        </a>
+            <div style={caption}>{T.doctorParkYoutube}</div>
+          </a>
+        </div>
       </div>
-    </div>
-  );
-};
+    )
+  }
 
   return (
     <>
@@ -247,20 +235,24 @@ export default function App() {
             <span className="brand-sub">러닝기록</span>
           </div>
 
-          <div className="nav-right">
+        <div className="nav-right">
             {syncing && <span className="help">{T.syncing}</span>}
 
             <button
-              className={`lang-toggle ${lang==='en' ? 'active' : ''}`}
-              onClick={()=>setLang('en')}
+              className={`lang-toggle ${lang === 'en' ? 'active' : ''}`}
+              onClick={() => setLang('en')}
               title="English"
-            >{T.langEn}</button>
-            <span style={{color:'#cbd5e1'}}>|</span>
+            >
+              {T.langEn}
+            </button>
+            <span style={{ color: '#cbd5e1' }}>|</span>
             <button
-              className={`lang-toggle ${lang==='ko' ? 'active' : ''}`}
-              onClick={()=>setLang('ko')}
+              className={`lang-toggle ${lang === 'ko' ? 'active' : ''}`}
+              onClick={() => setLang('ko')}
               title="Korean"
-            >{T.langKo}</button>
+            >
+              {T.langKo}
+            </button>
 
             {!user ? (
               <button className="button primary" onClick={doAuth}>
@@ -286,9 +278,10 @@ export default function App() {
         <div className="two-pane">
           {/* LEFT */}
           <div>
-            {/* 기록 입력 · 저장 카드 */}
+            {/* 기록 입력 · 저장 */}
             <div className="card">
               <h3 className="section-title">{T.formTitle}</h3>
+
               <EntryForm
                 name={name}
                 setName={setName}
@@ -296,15 +289,37 @@ export default function App() {
                 setEntries={setEntries}
                 lang={lang}
               />
-              <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:12 }}>
-                <button className="button" onClick={()=>setEntries([])}>{STR[lang].reset}</button>
-                <button className="button primary" onClick={handleSave}>
-                  {user ? STR[lang].saveAccount : STR[lang].saveGuest}
-                </button>
+
+              {/* 버튼 + 안내 문구 */}
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  <button className="button" onClick={() => setEntries([])}>
+                    {STR[lang].reset}
+                  </button>
+                  <button className="button primary" onClick={handleSave}>
+                    {user ? STR[lang].saveAccount : STR[lang].saveGuest}
+                  </button>
+                </div>
+
+                {/* ⬇️ 다국어 저장 안내 문구 */}
+                <div
+                  style={{
+                    marginTop: 20,
+                    fontSize: 14,
+                    color: '#64748b',
+                    textAlign: 'right',
+                    lineHeight: 1.45
+                  }}
+                >
+                  {T.saveNoticePrefix}
+                  <strong style={{ color: '#111827' }}>{T.saveNoticeStrong}</strong>
+                  {T.saveNoticeSuffix}
+                  <div>{T.saveNoticeLine2}</div>
+                </div>
               </div>
             </div>
 
-            {/* ➜ 새 카드: 기록입력저장 카드 “아래”에 별도 카드로 QR 표시 */}
+            {/* QR 카드 */}
             <div className="card" style={{ marginTop: 16 }}>
               <h3 className="section-title">{T.linksTitle}</h3>
               <QRRow />
@@ -323,7 +338,7 @@ export default function App() {
       <button
         className={`fab-top ${showTop ? 'show' : ''}`}
         onClick={scrollTop}
-        aria-label={lang==='en' ? 'Back to top' : '맨 위로'}
+        aria-label={lang === 'en' ? 'Back to top' : '맨 위로'}
       >
         ↑ Top
       </button>
