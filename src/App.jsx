@@ -32,7 +32,7 @@ const STR = {
     formTitle: '기록 입력 · 저장',
     dashTitle: '시각화 대시보드',
     reset: '초기화',
-    saveGuest: '게스트로 저장(이 브라우저)',
+    saveGuest: '게스트로 저장(현재 브라우저)',
     saveAccount: '계정에 저장',
     login: 'Google로 로그인',
     logout: '로그아웃',
