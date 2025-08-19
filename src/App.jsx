@@ -6,7 +6,7 @@ import { loadEntries, saveEntries, mergeGuestToUser } from './lib/storage.js'
 import { auth, googleProvider } from './lib/firebase.js'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 
-// QR 이미지 (src 폴더에 qr1.png, qr2.png 필요)
+// QR 이미지
 import qr1 from './qr1.png'
 import qr2 from './qr2.png'
 
@@ -14,6 +14,8 @@ const STR = {
   en: {
     formTitle: 'Input · Save',
     dashTitle: 'Visualization Dashboard',
+    linksTitle: 'Links · QR',
+
     reset: 'Reset',
     saveGuest: 'Save as Guest (this browser)',
     saveAccount: 'Save to Account',
@@ -22,21 +24,26 @@ const STR = {
     langEn: 'English',
     langKo: '한국어',
     syncing: 'Syncing…',
-    toastGuestSaved: 'Saved locally.',
-    toastAccountSaved: 'Saved to your account!',
-    linksTitle: 'Links · QR',
-    okcyReserve: 'OK Cycling Reservation',
-    doctorParkYoutube: 'Pro. Park Cycling YouTube',
 
-    // ⬇️ 저장 안내 문구 다국어
-    saveNoticePrefix: 'After logging in and entering your data, press ',
-    saveNoticeStrong: '“Save to Account”',
-    saveNoticeSuffix: ' at the end.',
-    saveNoticeLine2: 'If you don’t save, your data cannot be loaded next time.'
+    // 저장 안내(두 줄)
+    saveHint1: "After entering data, click 'Save to Account' at the end.",
+    saveHint2: "If you don't save, you can’t load it next time.",
+
+    // 폼 제목 옆 안내
+    titleNote: 'Records are saved when you log in',
+
+    // 제작 크레딧 (오른쪽 정렬로 표기)
+    creditLead: 'Built by ',
+    creditName: 'Juhyuk Park, OK Cycling',
+
+    okcyReserve: 'OK Cycling Reservation',
+    doctorParkYoutube: 'Dr. Park Cycling YouTube',
   },
   ko: {
     formTitle: '기록 입력 · 저장',
     dashTitle: '시각화 대시보드',
+    linksTitle: '링크 · QR',
+
     reset: '초기화',
     saveGuest: '게스트로 저장(현재 브라우저)',
     saveAccount: '계정에 저장',
@@ -45,18 +52,22 @@ const STR = {
     langEn: 'English',
     langKo: '한국어',
     syncing: '동기화 중…',
-    toastGuestSaved: '이 브라우저에 저장되었습니다.',
-    toastAccountSaved: '계정에 저장되었습니다!',
-    linksTitle: '링크 · QR',
+
+    // 저장 안내(두 줄)
+    saveHint1: "로그인 후 데이터를 입력하시고, ‘계정에 저장’을 눌러주세요.",
+    saveHint2: "저장하지 않으면 다음에 내용을 불러올 수 없습니다.",
+
+    // 폼 제목 옆 안내
+    titleNote: '로그인하면 기록이 저장됩니다',
+
+    // 제작 크레딧 (오른쪽 정렬로 표기)
+    creditLead: '',
+    creditName: '오케이사이클링 박주혁프로',
+    creditTail: ' 제작',
+
     okcyReserve: '오케이사이클링 예약하기',
     doctorParkYoutube: '사이클박박사 유튜브',
-
-    // ⬇️ 저장 안내 문구 다국어
-    saveNoticePrefix: '로그인 후 데이터를 입력하시고, 마지막에 꼭 ',
-    saveNoticeStrong: '‘계정에 저장’',
-    saveNoticeSuffix: '을 눌러주세요.',
-    saveNoticeLine2: '저장하지 않으면 다음에 내용을 불러올 수 없습니다.'
-  }
+  },
 }
 
 export default function App() {
@@ -64,7 +75,6 @@ export default function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('rg_lang') || 'ko')
   const T = STR[lang]
 
-  // name은 입력을 받지 않더라도 저장 구조를 유지하기 위해 남겨둡니다.
   const [name, setName] = useState('')
   const [entries, setEntries] = useState([])
 
@@ -80,7 +90,7 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem('rg_lang', lang) }, [lang])
 
-  // 초기 게스트 데이터 로드
+  // 게스트 데이터 초기 로드
   useEffect(() => {
     (async () => {
       const data = await loadEntries(null)
@@ -120,7 +130,7 @@ export default function App() {
     return () => unsub()
   }, [])
 
-  // 맨위 버튼
+  // 맨 위로 버튼 가시성
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 400)
     window.addEventListener('scroll', onScroll)
@@ -135,89 +145,41 @@ export default function App() {
     return () => clearTimeout(t)
   }, [syncing])
 
-  // Auth
-  const doAuth = async () => { await signInWithPopup(auth, googleProvider) }
+  const doAuth   = async () => { await signInWithPopup(auth, googleProvider) }
   const doLogout = async () => { await signOut(auth) }
 
   const handleSave = async () => {
     const uid = user?.uid || null
     await saveEntries(uid, { name: name || '', entries })
-    showToast(uid ? T.toastAccountSaved : T.toastGuestSaved)
+    showToast(
+      uid
+        ? (lang === 'ko' ? '계정에 저장되었습니다!' : 'Saved to your account!')
+        : (lang === 'ko' ? '이 브라우저에 저장되었습니다.' : 'Saved locally.')
+    )
   }
-
-  // 상단 안내문
-  const Notice = () => (
-    <div className="notice" style={{ textAlign: 'right', fontSize: 14, color: '#64748b' }}>
-      {lang === 'ko' ? (
-        <>
-          pc버전에 최적화 되어있습니다. 로그인하면 기록이 저장됩니다.&nbsp;
-          <strong style={{ color: '#111827' }}>오케이사이클링 박주혁프로</strong>가 제작했습니다.
-        </>
-      ) : (
-        <>
-          Optimized for PC. Your records are saved when you log in.&nbsp;
-          <strong style={{ color: '#111827' }}>Pro Juhyeok Park (OK Cycling)</strong> made this.
-        </>
-      )}
-    </div>
-  )
 
   // QR 두 개(한 줄)
   const QRRow = () => {
-    const row = {
-      display: 'flex',
-      gap: 16,
-      marginTop: 4,
-      marginBottom: 4,
-      alignItems: 'flex-start',
-      justifyContent: 'space-between',
-      flexWrap: 'nowrap',
-    }
-    const col = { flex: '0 0 calc(50% - 8px)', textAlign: 'center' }
-    const aStyle = { display: 'block', textDecoration: 'none', color: '#111827' }
-    const box = {
-      width: 'min(380px, 100%)',
-      aspectRatio: '1 / 1',
-      margin: '0 auto 8px',
-      position: 'relative',
-      background: 'transparent',
-    }
-    const inner = (scale = 1) => ({
-      position: 'absolute',
-      inset: 0,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transform: `scale(${scale})`,
-      transformOrigin: 'center',
-      padding: 0,
-    })
-    const imgStyle = { width: '100%', height: '100%', objectFit: 'contain', borderRadius: 8, display: 'block' }
-    const caption = { fontSize: 14, fontWeight: 600 }
-
-    const SCALE_QR1 = 1.03
-    const SCALE_QR2 = 0.96
+    const row = { display:'flex', gap:16, marginTop:4, marginBottom:4, alignItems:'flex-start', justifyContent:'space-between', flexWrap:'nowrap' }
+    const col = { flex:'0 0 calc(50% - 8px)', textAlign:'center' }
+    const aStyle = { display:'block', textDecoration:'none', color:'#111827' }
+    const box = { width:'min(380px, 100%)', aspectRatio:'1 / 1', margin:'0 auto 8px', position:'relative', background:'transparent' }
+    const inner = (scale=1)=>({ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', transform:`scale(${scale})`, transformOrigin:'center', padding:0 })
+    const imgStyle = { width:'100%', height:'100%', objectFit:'contain', borderRadius:8, display:'block' }
+    const caption = { fontSize:14, fontWeight:600 }
+    const SCALE_QR1 = 1.03, SCALE_QR2 = 0.96
 
     return (
       <div style={row}>
         <div style={col}>
           <a href="https://m.site.naver.com/1O9lV" target="_blank" rel="noopener noreferrer" style={aStyle}>
-            <div style={box}>
-              <div style={inner(SCALE_QR1)}>
-                <img src={qr1} alt="OK Cycling QR" style={imgStyle} />
-              </div>
-            </div>
+            <div style={box}><div style={inner(SCALE_QR1)}><img src={qr1} alt="OK Cycling QR" style={imgStyle}/></div></div>
             <div style={caption}>{T.okcyReserve}</div>
           </a>
         </div>
-
         <div style={col}>
           <a href="https://www.youtube.com/@cyclinglab" target="_blank" rel="noopener noreferrer" style={aStyle}>
-            <div style={box}>
-              <div style={inner(SCALE_QR2)}>
-                <img src={qr2} alt="사이클박박사 유튜브 QR" style={imgStyle} />
-              </div>
-            </div>
+            <div style={box}><div style={inner(SCALE_QR2)}><img src={qr2} alt="사이클박박사 유튜브 QR" style={imgStyle}/></div></div>
             <div style={caption}>{T.doctorParkYoutube}</div>
           </a>
         </div>
@@ -227,60 +189,80 @@ export default function App() {
 
   return (
     <>
-      {/* NAV */}
+      {/* ===================== NAV ===================== */}
       <div className="header">
+        {/* PC: 브랜드 왼쪽, 언어 ▸ 로그인 오른쪽 */}
+        {/* 모바일: 한 줄(브랜드 · Eng/한 · Google 로그인) */}
         <div className="nav">
           <div className="brand-wrap">
-            <span className="brand">Running Growth</span>
-            <span className="brand-sub">러닝기록</span>
+            <span className="brand">Iron Training Log</span>
           </div>
 
-        <div className="nav-right">
-            {syncing && <span className="help">{T.syncing}</span>}
-
+          <div className="lang-wrap">
             <button
               className={`lang-toggle ${lang === 'en' ? 'active' : ''}`}
               onClick={() => setLang('en')}
               title="English"
             >
-              {T.langEn}
+              <span className="only-desktop">{STR.en.langEn}</span>
+              <span className="only-mobile">Eng</span>
             </button>
-            <span style={{ color: '#cbd5e1' }}>|</span>
+            <span className="sep">|</span>
             <button
               className={`lang-toggle ${lang === 'ko' ? 'active' : ''}`}
               onClick={() => setLang('ko')}
-              title="Korean"
+              title="한국어"
             >
-              {T.langKo}
+              <span className="only-desktop">{STR.ko.langKo}</span>
+              <span className="only-mobile">한</span>
             </button>
+          </div>
 
-            {!user ? (
-              <button className="button primary" onClick={doAuth}>
-                {T.login}
-              </button>
-            ) : (
+          <div className="user-cta">
+            {syncing && <span className="help">{STR[lang].syncing}</span>}
+            {user ? (
               <>
-                <span className="help">{user.email}</span>
+                <span className="help user-email">{user.email}</span>
                 <button className="button" onClick={doLogout}>{STR[lang].logout}</button>
               </>
+            ) : (
+              <button className="button primary" onClick={doAuth}>
+                <span>Google</span><span style={{ marginLeft: 4 }}>{lang === 'ko' ? '로그인' : 'Sign in'}</span>
+              </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* 안내 문구 */}
+      {/* ===================== 제작 크레딧(오른쪽 정렬) ===================== */}
       <div className="container">
-        <Notice />
+        <div className="notice">
+          {lang === 'ko' ? (
+            <>
+              {STR.ko.creditLead}
+              <strong>{STR.ko.creditName}</strong>
+              {STR.ko.creditTail}
+            </>
+          ) : (
+            <>
+              {STR.en.creditLead}
+              <strong>{STR.en.creditName}</strong>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* 본문 */}
+      {/* ===================== 본문 ===================== */}
       <div className="container" style={{ paddingTop: 8 }}>
         <div className="two-pane">
           {/* LEFT */}
           <div>
-            {/* 기록 입력 · 저장 */}
             <div className="card">
-              <h3 className="section-title">{T.formTitle}</h3>
+              {/* 제목 + 작은 안내 */}
+              <h3 className="section-title">
+                {T.formTitle}
+                <span className="title-note">({STR[lang].titleNote})</span>
+              </h3>
 
               <EntryForm
                 name={name}
@@ -290,31 +272,20 @@ export default function App() {
                 lang={lang}
               />
 
-              {/* 버튼 + 안내 문구 */}
+              {/* 버튼 + 저장 안내 */}
               <div style={{ marginTop: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
                   <button className="button" onClick={() => setEntries([])}>
-                    {STR[lang].reset}
+                    {T.reset}
                   </button>
                   <button className="button primary" onClick={handleSave}>
-                    {user ? STR[lang].saveAccount : STR[lang].saveGuest}
+                    {user ? T.saveAccount : T.saveGuest}
                   </button>
                 </div>
 
-                {/* ⬇️ 다국어 저장 안내 문구 */}
-                <div
-                  style={{
-                    marginTop: 20,
-                    fontSize: 14,
-                    color: '#64748b',
-                    textAlign: 'right',
-                    lineHeight: 1.45
-                  }}
-                >
-                  {T.saveNoticePrefix}
-                  <strong style={{ color: '#111827' }}>{T.saveNoticeStrong}</strong>
-                  {T.saveNoticeSuffix}
-                  <div>{T.saveNoticeLine2}</div>
+                {/* 저장 안내(두 줄) */}
+                <div className="save-hint" style={{ marginTop: 18 }}>
+                  {T.saveHint1}<br />{T.saveHint2}
                 </div>
               </div>
             </div>
@@ -334,7 +305,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* 맨 위로 버튼 */}
+      {/* 맨 위로 버튼(데스크톱 위주) */}
       <button
         className={`fab-top ${showTop ? 'show' : ''}`}
         onClick={scrollTop}

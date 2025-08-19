@@ -9,7 +9,6 @@ import {
 } from 'recharts'
 import { secondsToPace } from '../lib/utils.js'
 
-/* ===== 라벨/텍스트 ===== */
 const TXT = {
   ko: {
     distance: '거리',
@@ -19,7 +18,6 @@ const TXT = {
     cadPair: '평균·최대 케이던스',
     formAvg: '평균',
     formMax: '최대',
-
     stride: '보행길이',
     gct: '접지시간',
     vRatio: '수직비율',
@@ -33,7 +31,6 @@ const TXT = {
     cadPair: 'Avg · Max Cadence',
     formAvg: 'Avg',
     formMax: 'Max',
-
     stride: 'Stride',
     gct: 'Ground Contact',
     vRatio: 'Vertical Ratio',
@@ -41,10 +38,9 @@ const TXT = {
   }
 }
 
-/* ===== 단위 ===== */
 const UNITS = {
   distance: ' km',
-  avgPace: '', maxPace: '',               // pace는 mm:ss로 포맷
+  avgPace: '', maxPace: '',
   avgHR: ' bpm',  maxHR: ' bpm',
   avgPower: ' W', maxPower: ' W',
   avgCad: ' rpm', maxCad: ' rpm',
@@ -52,47 +48,28 @@ const UNITS = {
   vRatio: ' %',  vOsc: ' cm',
 }
 
-/* ===== 색상 ===== */
 const COLORS = {
-  avg: '#1d4ed8',  // 파랑
-  max: '#ef4444',  // 빨강
-  mono: '#111827', // 단일(탭/거리)
+  avg: '#1d4ed8',
+  max: '#ef4444',
+  mono: '#111827',
 }
 
-/* ===== 유틸 ===== */
 const getDistance = (e) => e.dist ?? e.distance ?? e.distKm ?? e.km ?? null
 const paceTick = (v) => secondsToPace(v || 0)
 const numTick  = (v) => v
 
-// 0이면 라벨만 숨기는 포맷터
-const fmtNoZero = (fmt, unit = '') => (v) => {
-  if (v === 0) return ''              // 0 라벨 숨김
-  const base = fmt ? fmt(v) : v
-  return `${base}${unit}`
-}
-
-/* ===== 메인 컴포넌트 ===== */
 export default function Dashboard({ entries = [], lang = 'ko' }) {
   const L = TXT[lang]
 
-  // 데이터 가공
   const data = useMemo(() => {
     const arr = entries || []
-
     const dist = arr.map(e => ({ date: e.date, val: getDistance(e) }))
-
     const pair = (kAvg, kMax) =>
-      arr.map(e => ({
-        date: e.date,
-        avg: e[kAvg] ?? null,
-        max: e[kMax] ?? null,
-      }))
-
+      arr.map(e => ({ date: e.date, avg: e[kAvg] ?? null, max: e[kMax] ?? null }))
     const stride = arr.map(e => ({ date: e.date, val: e.stride ?? null }))
     const gct    = arr.map(e => ({ date: e.date, val: e.gct ?? null }))
     const vRatio = arr.map(e => ({ date: e.date, val: e.vRatio ?? null }))
     const vOsc   = arr.map(e => ({ date: e.date, val: e.vOsc ?? null }))
-
     return {
       dist,
       pace:  pair('avgPace',  'maxPace'),
@@ -103,10 +80,8 @@ export default function Dashboard({ entries = [], lang = 'ko' }) {
     }
   }, [entries])
 
-  // 탭 상태
   const [activeTab, setActiveTab] = useState('stride')
 
-  // 탭 메타
   const TAB_META = useMemo(() => ({
     stride: { label: L.stride, color: COLORS.mono, unit: UNITS.stride, yTick: numTick,  data: data.tabs.stride },
     gct:    { label: L.gct,    color: COLORS.mono, unit: UNITS.gct,    yTick: numTick,  data: data.tabs.gct },
@@ -117,29 +92,22 @@ export default function Dashboard({ entries = [], lang = 'ko' }) {
 
   /* ===== 공통 렌더러 ===== */
   const PairChart = ({ id, title, rows, yTick, unitAvgKey, unitMaxKey }) => {
-    const isPace = unitAvgKey === 'avgPace' || unitMaxKey === 'maxPace'
-    const axisTick = isPace
-      ? (v) => (v === 0 ? '' : paceTick(v))                  // 0:00 숨김
-      : fmtNoZero(null, UNITS[unitAvgKey] || '')             // 숫자 + 단위, 0 숨김
-
     return (
       <div id={id} className="chart-card one">
         <h4 className="chart-title" style={{ fontSize: 20, fontWeight: 800, margin: '6px 8px 4px' }}>{title}</h4>
         <div className="chart">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rows} margin={{ top: 16, right: 16, bottom: 10, left: 0 }}>
+            <LineChart data={rows} margin={{ top: 24, right: 16, bottom: 10, left: 0 }}>
+              {/* ↑ top 여백을 24로 늘려 범례와 제목 간 간격 확보 */}
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={axisTick} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={yTick} />
               <Tooltip
-                separator="" // 콜론 제거
+                separator=""
                 labelFormatter={(l) => l}
                 formatter={(v, key) => {
-                  // key => 'avg' | 'max'
                   const metricKey = key === 'avg' ? unitAvgKey : unitMaxKey
-                  const val = (metricKey === 'avgPace' || metricKey === 'maxPace')
-                    ? secondsToPace(v)
-                    : v
+                  const val = (metricKey === 'avgPace' || metricKey === 'maxPace') ? secondsToPace(v) : v
                   const unit = UNITS[metricKey] || ''
                   const label = key === 'avg' ? L.formAvg : L.formMax
                   return [`${val}${unit}`, label]
@@ -149,11 +117,12 @@ export default function Dashboard({ entries = [], lang = 'ko' }) {
                 verticalAlign="top"
                 align="right"
                 iconType="circle"
-                wrapperStyle={{ top: -8, right: 4, fontSize: 12 }} // 살짝 위, 작게
+                iconSize={10}                 // ← 아이콘 25% 축소
+                wrapperStyle={{ top: 6, right: 4, fontSize: 12 }}
                 formatter={(v) => v === 'avg' ? L.formAvg : L.formMax}
               />
-              <Line type="monotone" name="avg" dataKey="avg" stroke={COLORS.avg} dot strokeWidth={2}/>
-              <Line type="monotone" name="max" dataKey="max" stroke={COLORS.max} dot strokeWidth={2}/>
+              <Line type="monotone" name="avg" dataKey="avg" stroke={COLORS.avg} dot={{ r: 4 }} strokeWidth={2}/>
+              <Line type="monotone" name="max" dataKey="max" stroke={COLORS.max} dot={{ r: 4 }} strokeWidth={2}/>
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -166,19 +135,12 @@ export default function Dashboard({ entries = [], lang = 'ko' }) {
       <h4 className="chart-title" style={{ fontSize: 20, fontWeight: 800, margin: '6px 8px 4px' }}>{L.distance}</h4>
       <div className="chart">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data.dist} margin={{ top: 16, right: 16, bottom: 10, left: 0 }}>
+          <LineChart data={data.dist} margin={{ top: 12, right: 16, bottom: 10, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-            <YAxis
-              tick={{ fontSize: 12 }}
-              tickFormatter={fmtNoZero(null, UNITS.distance)} // "0 km" 숨김
-            />
-            <Tooltip
-              separator=""
-              labelFormatter={(l)=> l}
-              formatter={(v)=> [`${v}${UNITS.distance}`, '']}
-            />
-            <Line type="monotone" dataKey="val" stroke={COLORS.mono} dot strokeWidth={2}/>
+            <YAxis tick={{ fontSize: 12 }} tickFormatter={(v)=>v} />
+            <Tooltip separator="" labelFormatter={(l)=> l} formatter={(v)=> [`${v}${UNITS.distance}`, '']} />
+            <Line type="monotone" dataKey="val" stroke={COLORS.mono} dot={{ r: 4 }} strokeWidth={2}/>
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -189,47 +151,30 @@ export default function Dashboard({ entries = [], lang = 'ko' }) {
     const meta = TAB_META[activeTab]
     return (
       <div id="chart-tabs" className="chart-card one">
-        {/* 탭 헤더 (활성 탭만 밑줄, 글자 크기 20) */}
-        <div style={{ display:'flex', gap:24, alignItems:'flex-end', margin:'0 8px 8px' }}>
+        <div className="subtabs" style={{ justifyContent:'center' }}>
           {Object.keys(TAB_META).map(k => (
             <button
               key={k}
               onClick={() => setActiveTab(k)}
-              style={{
-                border:'none',
-                background:'transparent',
-                padding:'2px 0 6px',
-                cursor:'pointer',
-                fontSize: 20,
-                fontWeight: activeTab === k ? 800 : 700,
-                color: activeTab === k ? '#111827' : '#6b7280',
-                borderBottom: activeTab === k ? '3px solid #111827' : '3px solid transparent'
-              }}
+              className={`tab ${activeTab === k ? 'active' : ''}`}
             >
               {TAB_META[k].label}
             </button>
           ))}
         </div>
 
-        {/* 선택된 탭 차트 */}
         <div className="chart" style={{ paddingTop: 4 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={meta.data} margin={{ top: 8, right: 16, bottom: 10, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-              <YAxis
-                tick={{ fontSize: 12 }}
-                tickFormatter={fmtNoZero(meta.yTick, meta.unit)} // 0 숨김 + 단위
-              />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={meta.yTick} />
               <Tooltip
-                separator=""                 // ":" 제거
+                separator=""
                 labelFormatter={(l)=> l}
-                formatter={(v)=> [
-                  `${meta.yTick ? meta.yTick(v) : v}${meta.unit || ''}`,
-                  ''
-                ]}
+                formatter={(v)=> [`${meta.yTick ? meta.yTick(v) : v}${meta.unit || ''}`, '']}
               />
-              <Line type="monotone" dataKey="val" stroke={meta.color} dot strokeWidth={2}/>
+              <Line type="monotone" dataKey="val" stroke={meta.color} dot={{ r: 4 }} strokeWidth={2}/>
             </LineChart>
           </ResponsiveContainer>
         </div>
