@@ -29,7 +29,8 @@ const LABELS = {
     vOsc: '수직진폭 (cm)',
     addRowSave: '행 추가(저장)',
     del: '삭제',
-    noRows: '아직 추가된 기록이 없습니다.'
+    noRows: '아직 추가된 기록이 없습니다.',
+    pacePh: 'mm:ss'
   },
   en: {
     date: 'Date',
@@ -48,7 +49,8 @@ const LABELS = {
     vOsc: 'Vertical Oscillation (cm)',
     addRowSave: 'Add row (save)',
     del: 'Delete',
-    noRows: 'No entries yet.'
+    noRows: 'No entries yet.',
+    pacePh: 'mm:ss'
   }
 }
 
@@ -96,21 +98,37 @@ export default function EntryForm({ entries, setEntries, lang='ko' }) {
     setEntries(copy)
   }
 
+  // 표 머리글(평균/최고 페이스)을 항상 2줄로 렌더링
+  const renderPaceHeader = (type /* 'avg' | 'max' */) => {
+    const first = lang === 'ko'
+      ? (type === 'avg' ? '평균페이스' : '최고페이스')
+      : (type === 'avg' ? 'Avg Pace'   : 'Max Pace')
+    return (
+      <span className="th-2line">
+        <span>{first}</span><br/><span>(mm:ss)</span>
+      </span>
+    )
+  }
+
   return (
     <>
       {/* 상단 2열: (좌) 날짜  (우) 거리 */}
       <div className="form-grid two" style={{marginBottom:12}}>
         <div>
           <label className="help">{L.date}</label>
-          <input className="input" type="date"
-                 value={row.date}
-                 onChange={e=>setRow({...row, date: e.target.value})}/>
+          <input
+            className="input" type="date"
+            value={row.date}
+            onChange={e=>setRow({...row, date: e.target.value})}
+          />
         </div>
         <div>
           <label className="help">{L.dist}</label>
-          <input className="input" type="number" step="any"
-                 value={row.dist}
-                 onChange={e=>setRow({...row, dist: e.target.value})}/>
+          <input
+            className="input" type="number" step="any"
+            value={row.dist}
+            onChange={e=>setRow({...row, dist: e.target.value})}
+          />
         </div>
       </div>
 
@@ -143,7 +161,11 @@ export default function EntryForm({ entries, setEntries, lang='ko' }) {
             <tr>
               <th>{L.date}</th>
               <th>{L.dist}</th>
-              <th>{L.avgPace}</th><th>{L.maxPace}</th>
+
+              {/* ⬇️ 두 줄 고정 헤더 */}
+              <th className="th-2line">{renderPaceHeader('avg')}</th>
+              <th className="th-2line">{renderPaceHeader('max')}</th>
+
               <th>{L.avgHR}</th><th>{L.maxHR}</th>
               <th>{L.avgPower}</th><th>{L.maxPower}</th>
               <th>{L.avgCad}</th><th>{L.maxCad}</th>
@@ -170,7 +192,6 @@ export default function EntryForm({ entries, setEntries, lang='ko' }) {
                 <td className="num">{e.vRatio ?? ''}</td>
                 <td className="num">{e.vOsc ?? ''}</td>
                 <td>
-                  {/* ✕ 아이콘 버튼 */}
                   <button
                     className="button"
                     aria-label={L.del}

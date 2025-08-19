@@ -125,6 +125,7 @@ body{
 .table th{ font-size:13px; line-height:1.15; white-space:normal; word-break:keep-all }
 .table td.num{ text-align:right }
 
+
 /* ================= 차트 ================= */
 .chart-title,.chart-card-title{
   font-size:var(--chart-title-size); font-weight:800; margin:6px 8px 4px; color:var(--fg); text-align:center;
