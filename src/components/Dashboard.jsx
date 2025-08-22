@@ -1,10 +1,64 @@
 // src/components/Dashboard.jsx
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useRef, useEffect } from 'react'
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 import { secondsToPace } from '../lib/utils.js'
+
+// 패널 리사이즈 핸들러 컴포넌트
+const ResizeHandle = ({ onResize }) => {
+  const handleRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  
+  useEffect(() => {
+    const handle = handleRef.current;
+    let startX;
+    let startWidth;
+    
+    const onMouseDown = (e) => {
+      setIsDragging(true);
+      startX = e.pageX;
+      startWidth = handle.parentElement.offsetWidth;
+      document.body.style.cursor = 'col-resize';
+    };
+    
+    const onMouseMove = (e) => {
+      if (!isDragging) return;
+      
+      const delta = e.pageX - startX;
+      const newWidth = Math.min(
+        Math.max(200, startWidth + delta),
+        window.innerWidth * 0.5
+      );
+      
+      onResize(newWidth);
+      e.preventDefault();
+    };
+    
+    const onMouseUp = () => {
+      setIsDragging(false);
+      document.body.style.cursor = '';
+    };
+    
+    handle.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    
+    return () => {
+      handle.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [isDragging, onResize]);
+  
+  return (
+    <div 
+      ref={handleRef}
+      className={`admin-resize-handle ${isDragging ? 'dragging' : ''}`}
+    />
+  );
+};
 
 const TXT = {
   ko: {

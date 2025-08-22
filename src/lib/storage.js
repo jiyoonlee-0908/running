@@ -29,6 +29,9 @@ export async function loadEntries(uid) {
  * - uid 없으면 로컬스토리지
  * - uid 있으면 Firestore
  * - updatedAt 서버시간 기록
+ *
+ * (현재 UI에서는 로그인 상태에서만 저장 버튼이 동작하므로,
+ *  게스트 저장 분기는 과거 데이터 병합(merge) 호환을 위해 남겨둡니다.)
  */
 export async function saveEntries(uid, payload) {
   if (!uid) {

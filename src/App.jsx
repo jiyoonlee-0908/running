@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import EntryForm from './components/EntryForm.jsx'
 import Dashboard from './components/Dashboard.jsx'
+import AdminPanel from './components/AdminPanel.jsx'
 import { loadEntries, saveEntries, mergeGuestToUser } from './lib/storage.js'
 import { auth, googleProvider } from './lib/firebase.js'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
@@ -112,6 +113,14 @@ function normalizeData(raw) {
 }
 
 export default function App() {
+  // URL 경로가 /910908인지 확인
+  const isAdminRoute = window.location.pathname === '/910908'
+  
+  // 관리자 페이지라면 AdminPanel 컴포넌트 렌더링
+  if (isAdminRoute) {
+    return <AdminPanel />
+  }
+
   const [user, setUser] = useState(null)
   const [lang, setLang] = useState(() => localStorage.getItem('rg_lang') || 'ko')
   const T = STR[lang]
@@ -200,21 +209,26 @@ export default function App() {
   const doAuth = async () => { await signInWithPopup(auth, googleProvider) }
   const doLogout = async () => { await signOut(auth) }
 
-  const handleSave = async () => {
-    const uid = user?.uid || null
-    await saveEntries(uid, {
-      name: name || '',
-      entries: entriesBySport.run,  // 호환 필드
-      entriesBySport,
-    })
-    setToast(
-      uid
-        ? (lang === 'ko' ? '계정에 저장되었습니다!' : 'Saved to your account!')
-        : (lang === 'ko' ? '이 브라우저에 저장되었습니다.' : 'Saved locally.')
-    )
-    clearTimeout(handleSave._t)
-    handleSave._t = setTimeout(() => setToast(null), 2200)
+  // App.jsx 안의 handleSave 교체
+const handleSave = async () => {
+  const uid = user?.uid || null
+  if (!uid) {
+    setToast(lang === 'ko' ? '로그인 후 저장할 수 있어요.' : 'Sign in to save.')
+    return
   }
+  await saveEntries(uid, {
+    name: name || user.displayName || (user.email ? user.email.split('@')[0] : ''),
+    ownerUid: uid,
+    email: user.email || '',
+    displayName: user.displayName || '',
+    entries: entriesBySport.run,   // 레거시 호환
+    entriesBySport,
+  })
+  setToast(lang === 'ko' ? '계정에 저장되었습니다!' : 'Saved to your account!')
+  clearTimeout(handleSave._t)
+  handleSave._t = setTimeout(() => setToast(null), 2200)
+}
+
 
   // 현재 종목 데이터 바인딩
   const currentEntries = entriesBySport[sport] || []
